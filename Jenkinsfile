@@ -1,52 +1,50 @@
-def stagename = ""
-pipeline {
+def continueotherstages = false
+pipeline{
     agent any
-
-    stages {
-        stage('Hello') {
-            steps {
-                echo 'Hello World'
-				script{
-				 stagename = "Hello"
-				}
-            }
-            post{
-                aborted{
-            emailext attachLog: true, body: 'devops15 ', compressLog: true, subject: ' stagename: ${stagename} jenkins options testing', to: 'malleshdevops2021@gmail.com'
-            }
-            }
-        }
-        stage('maven build'){
+    stages{
+        stage("build name"){
+          steps{
+            script {
+                    currentBuild.displayName = "${BUILD_NUMBER}-${JOB_NAME}-${BRANCH_NAME}"
+                    currentBuild.description = "continue other stages if stage fails"
+                }
+          }}
+        stage("stage1"){
             steps{
-                echo 'maven build status'
-                sh 'sleep 60s'
+                script {
+                try {
+                    sh "echo stage1"
+                } catch (Exception e) {
+                    continueotherstages = true
+                }
+               if(continueotherstages){
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                      sh "exit 1"
+                }
             }
-            post{
-                aborted{
-            emailext attachLog: true, body: 'devops15 ', compressLog: true, subject: 'jenkins options testing', to: 'malleshdevops2021@gmail.com'
             }
             }
         }
-        stage('email notification'){
+        stage("stage2"){
+            when {
+                expression{
+                !continueotherstages //false
+                }
+            }
             steps{
-                echo "email notification"
-            }
-            post{
-                aborted{
-            emailext attachLog: true, body: 'devops15 ', compressLog: true, subject: 'jenkins options testing', to: 'malleshdevops2021@gmail.com'
-            }
+                sh "echo stage2"
             }
         }
-    }
-    post {
-        fixed{
-            emailext attachLog: true, body: 'devops15 ', compressLog: true, subject: 'jenkins options testing', to: 'malleshdevops2021@gmail.com'
-        }
-        aborted{
-            emailext attachLog: true, body: 'devops15 ', compressLog: true, subject: 'jenkins options testing', to: 'malleshdevops2021@gmail.com'
-        }
-        success{
-            emailext attachLog: true, body: 'devops15 ', compressLog: true, subject: 'jenkins options testing', to: 'malleshdevops2021@gmail.com'
+        stage("stage3"){
+            when {
+                expression{
+                continueotherstages //true
+                }
+				environment name : env value: qa
+            }
+            steps{
+                echo "stage3"
+            }
         }
     }
 }
