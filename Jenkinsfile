@@ -40,7 +40,7 @@ pipeline{
                 expression{
                 continueotherstages //true
                 }
-				environment name : env value: qa
+				
             }
             steps{
                 echo "stage3"
